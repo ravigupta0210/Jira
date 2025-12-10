@@ -15,7 +15,7 @@ A full-stack project management application with meeting scheduling, built with 
 
 ## Tech Stack
 
-### Frontend
+### Frontend 
 - React 18 with Vite
 - TailwindCSS for styling
 - React Router for navigation
