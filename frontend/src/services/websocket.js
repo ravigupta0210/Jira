@@ -8,34 +8,39 @@ class WebSocketService {
   }
 
   connect(token) {
-    const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:5000`;
+    try {
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = import.meta.env.VITE_WS_URL || `${wsProtocol}//${window.location.hostname}:5000`;
 
-    this.ws = new WebSocket(wsUrl);
+      this.ws = new WebSocket(wsUrl);
 
-    this.ws.onopen = () => {
-      console.log('WebSocket connected');
-      this.reconnectAttempts = 0;
-      // Authenticate
-      this.send({ type: 'auth', token });
-    };
+      this.ws.onopen = () => {
+        console.log('WebSocket connected');
+        this.reconnectAttempts = 0;
+        this.send({ type: 'auth', token });
+      };
 
-    this.ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        this.handleMessage(message);
-      } catch (error) {
-        console.error('WebSocket message parse error:', error);
-      }
-    };
+      this.ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          this.handleMessage(message);
+        } catch (error) {
+          console.error('WebSocket message parse error:', error);
+        }
+      };
 
-    this.ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      this.attemptReconnect(token);
-    };
+      this.ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        this.attemptReconnect(token);
+      };
 
-    this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+      this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    } catch (error) {
+      console.warn('WebSocket connection failed:', error.message);
+      this.ws = null;
+    }
   }
 
   attemptReconnect(token) {
@@ -47,6 +52,7 @@ class WebSocketService {
   }
 
   disconnect() {
+    this.reconnectAttempts = this.maxReconnectAttempts;
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -72,7 +78,6 @@ class WebSocketService {
     }
     this.listeners.get(type).add(callback);
 
-    // Return unsubscribe function
     return () => {
       this.listeners.get(type).delete(callback);
     };
